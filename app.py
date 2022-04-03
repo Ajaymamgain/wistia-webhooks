@@ -4,11 +4,7 @@ from flask import Flask, request, abort, jsonify
 from flask_restx import Resource, Api
 import re
 from functools import wraps
-import urllib.request
-import dns.resolver
 import json
-from fuzzywuzzy import fuzz 
-from fuzzywuzzy import process
 import boto3
 import shortuuid
 from datetime import datetime
@@ -16,14 +12,15 @@ from datetime import datetime
 app = Flask(__name__)
 
 authorizations = {
-    'apikey' : {
-        'type' : 'apiKey',
-        'in' : 'header',
-        'name' : 'X-API-KEY'
+    'apikey': {
+        'type': 'apiKey',
+        'in': 'header',
+        'name': 'X-API-KEY'
     }
 }
 
 api = Api(app, authorizations=authorizations)
+
 
 def token_required(f):
     @wraps(f)
@@ -35,10 +32,10 @@ def token_required(f):
             token = request.headers['X-API-KEY']
 
         if not token:
-            return {'message' : 'Token is missing.'}, 401
+            return {'message': 'Token is missing.'}, 401
 
         if token != os.environ["TOKEN"]:
-            return {'message' : 'Your Token is wrong please contact amamgain@egencia.com'}, 401
+            return {'message': 'Your Token is wrong please contact amamgain@egencia.com'}, 401
 
         print('TOKEN: {}'.format(token))
         return f(*args, **kwargs)
@@ -48,39 +45,39 @@ def token_required(f):
 
 @api.route('/wistia-events')
 class events(Resource):
-    @api.doc(security='apikey')
-    @token_required
+    @api.doc(security='apikey') ##//    @token_required
     def post(self):
-        if  request.method == 'POST':
-            data = request.get_json(force=True)
-            uuid = data['hook']
+        if request.method == 'POST':
+            data = request.get_json()
+            jsondump = data['events']
+     
+
 
             try:
                 s3 = boto3.client('s3')
-                bucket_name =  os.environ["BUCKET"]
+                bucket_name = os.environ["BUCKET"]
 
                 date = datetime.now()
                 id = shortuuid.uuid()
                 filename = str(id) + ".json"
                 print(filename)
                 data = {
-                    'uuid': uuid, 'datetime': str(date)
+                    'data': jsondump, 'datetime': str(date), 'id':id
                 }
-                
+
                 body = json.dumps(data, sort_keys=True, indent=5)
-                print(body)
 
                 s3.put_object(Bucket=bucket_name, Key="wistia-mkto/"+filename,
-                            Body=body, ACL="private")
+                              Body=body, ACL="private")
 
             except Exception as e:
                 print(str(e))
-            
-            
+
             return {'data': data}
 
         else:
             abort(400)
+
 
 if __name__ == '__main__':
     app.run()
