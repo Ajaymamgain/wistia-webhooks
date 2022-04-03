@@ -1,0 +1,29 @@
+service: wistia-webhooks
+
+frameworkVersion: '2'
+
+custom:
+  wsgi:
+    app: app.app
+
+provider:
+  name: aws
+  runtime: python3.7
+  region: us-west-2
+  role: arn:aws:iam::637266587021:role/egencia-marketo-ops-role
+  lambdaHashingVersion: '20201221'
+
+functions:
+  api:
+    handler: wsgi_handler.handler
+    events:
+      - http:
+          path: /
+          method: ANY
+      - http:
+          path: /{proxy+}
+          method: ANY
+
+plugins:
+  - serverless-wsgi
+  - serverless-python-requirements
