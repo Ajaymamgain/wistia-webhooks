@@ -49,20 +49,18 @@ class events(Resource):
     def post(self):
         if request.method == 'POST':
             data = request.get_json()
+            uuid = data['hook']['uuid']
             jsondump = data['events']
      
-
-
             try:
                 s3 = boto3.client('s3')
                 bucket_name = os.environ["BUCKET"]
 
                 date = datetime.now()
-                id = shortuuid.uuid()
-                filename = str(id) + ".json"
+                filename = str(uuid) + ".json"
                 print(filename)
                 data = {
-                    'data': jsondump, 'datetime': str(date), 'id':id
+                    'jsondump': jsondump, 'datetime': str(date), 'uuid':uuid
                 }
 
                 body = json.dumps(data, sort_keys=True, indent=5)
